@@ -1,0 +1,360 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  Zap, 
+  Activity, 
+  Filter, 
+  Search, 
+  ArrowUpRight, 
+  ArrowDownRight,
+  RefreshCw,
+  Layers,
+  Cpu,
+  Coins,
+  LineChart as ChartIcon
+} from 'lucide-react';
+
+// البيانات الأولية للعملات الرقمية والرادار
+const INITIAL_COINS = [
+  { id: 'btc', symbol: 'BTC/USDT', name: 'العملات القيادية', category: 'leader', price: 79948.6, change: 0.03, netFlow: 17530000, buyRatio: 56.9, sellRatio: 43.1, volume: '1.22B', signal: 'دخول سيولة قوية', status: 'inflow' },
+  { id: 'eth', symbol: 'ETH/USDT', name: 'العملات القيادية', category: 'leader', price: 2387.62, change: -1.45, netFlow: -8330000, buyRatio: 44.5, sellRatio: 55.5, volume: '163.31M', signal: 'خروج سيولة', status: 'outflow' },
+  { id: 'sol', symbol: 'SOL/USDT', name: 'العملات القيادية', category: 'leader', price: 182.40, change: 2.10, netFlow: 4210000, buyRatio: 61.2, sellRatio: 38.8, volume: '45.2M', signal: 'دخول سيولة قوية', status: 'inflow' },
+  { id: 'wld', symbol: 'WLD/USDT', name: 'الذكاء الاصطناعي', category: 'ai', price: 0.4363, change: -2.15, netFlow: -1030000, buyRatio: 47.8, sellRatio: 52.2, volume: '4.66M', signal: 'خروج سيولة حادة', status: 'outflow' },
+  { id: 'tao', symbol: 'TAO/USDT', name: 'الذكاء الاصطناعي', category: 'ai', price: 249.34, change: 1.80, netFlow: 596100, buyRatio: 58.4, sellRatio: 41.6, volume: '2.56M', signal: 'تجميع حيتان', status: 'inflow' },
+  { id: 'strk', symbol: 'STRK/USDT', name: 'الطبقة الثانية', category: 'l2', price: 0.4682, change: 0.69, netFlow: 179600, buyRatio: 54.3, sellRatio: 45.7, volume: '1.09M', signal: 'سيولة متوازنة', status: 'inflow' },
+  { id: 'pepe', symbol: 'PEPE/USDT', name: 'عملات الميم', category: 'meme', price: 0.00427, change: -3.20, netFlow: -2880000, buyRatio: 41.0, sellRatio: 59.0, volume: '7.92M', signal: 'خروج سيولة', status: 'outflow' },
+  { id: 'doge', symbol: 'DOGE/USDT', name: 'عملات الميم', category: 'meme', price: 0.0771, change: 0.20, netFlow: -309000, buyRatio: 48.0, sellRatio: 52.0, volume: '4.35M', signal: 'خروج سيولة هادئ', status: 'outflow' }
+];
+
+export default function NebrasRadarDashboard() {
+  const [coins, setCoins] = useState(INITIAL_COINS);
+  const [activeTimeframe, setActiveTimeframe] = useState('1h');
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCoin, setSelectedCoin] = useState(INITIAL_COINS[0]);
+  const [liveStream, setLiveStream] = useState(true);
+
+  // محاكاة التحديث اللحظي المباشر لبيانات السيولة والسعر
+  useEffect(() => {
+    if (!liveStream) return;
+    const interval = setInterval(() => {
+      setCoins(prevCoins =>
+        prevCoins.map(coin => {
+          const delta = (Math.random() - 0.48) * (coin.price * 0.002);
+          const newPrice = Math.max(0.0001, coin.price + delta);
+          const flowDelta = (Math.random() - 0.47) * 50000;
+          const newNetFlow = coin.netFlow + flowDelta;
+          const newBuyRatio = Math.min(95, Math.max(5, coin.buyRatio + (Math.random() - 0.5) * 1.5));
+          
+          return {
+            ...coin,
+            price: Number(newPrice.toFixed(4)),
+            netFlow: Math.round(newNetFlow),
+            buyRatio: Number(newBuyRatio.toFixed(1)),
+            sellRatio: Number((100 - newBuyRatio).toFixed(1)),
+            status: newNetFlow >= 0 ? 'inflow' : 'outflow'
+          };
+        })
+      );
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [liveStream]);
+
+  // تصفية العملات بحسب الفئة أو البحث
+  const filteredCoins = coins.filter(coin => {
+    const matchesCategory = activeCategory === 'all' || coin.category === activeCategory;
+    const matchesSearch = coin.symbol.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          coin.name.includes(searchQuery);
+    return matchesCategory && matchesSearch;
+  });
+
+  const totalMarketNetFlow = coins.reduce((acc, c) => acc + c.netFlow, 0);
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-[#090d16] text-gray-100 p-4 font-sans select-none">
+      
+      {/* 1. الشريط العلوي الرئسي (Header) */}
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 bg-[#111726] p-4 rounded-2xl border border-gray-800 shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className="bg-gradient-to-tr from-amber-500 to-amber-300 p-2.5 rounded-xl text-gray-950 font-black shadow-lg shadow-amber-500/20">
+            <Zap className="w-6 h-6 fill-current" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-white">نِبْرَاس لِلتَّدَاوُل الذَّكِي</h1>
+              <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md font-mono">V8.0</span>
+            </div>
+            <p className="text-xs text-gray-400 mt-0.5">رادار صافي تدفق السيولة المؤسسية وحركة الحيتان لحظياً</p>
+          </div>
+        </div>
+
+        {/* كروت الإحصائيات المجمعة */}
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <div className="bg-[#182032] px-4 py-2 rounded-xl border border-gray-800 flex-1 lg:flex-initial">
+            <span className="text-xs text-gray-400 block mb-0.5">صافي سيولة السوق المجمّعة</span>
+            <span className={`text-base font-bold font-mono ${totalMarketNetFlow >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {totalMarketNetFlow >= 0 ? `+$${(totalMarketNetFlow / 1e6).toFixed(2)}M` : `-$${(Math.abs(totalMarketNetFlow) / 1e6).toFixed(2)}M`}
+            </span>
+          </div>
+
+          <div className="bg-[#182032] px-4 py-2 rounded-xl border border-gray-800 flex items-center gap-3">
+            <div>
+              <span className="text-xs text-gray-400 block mb-0.5">صائد دايفرجنس الحيتان</span>
+              <span className="text-sm font-bold text-amber-400">18 صفقة تجميع وتصريف</span>
+            </div>
+            <Activity className="w-5 h-5 text-amber-400 animate-pulse" />
+          </div>
+
+          <button 
+            onClick={() => setLiveStream(!liveStream)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
+              liveStream 
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+            }`}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${liveStream ? 'animate-spin' : ''}`} />
+            {liveStream ? 'البث الباشر: متصل' : 'البث متوقف'}
+          </button>
+        </div>
+      </header>
+
+      {/* 2. أدوات الفلترة والتصنيفات والشريط السريع */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between items-stretch md:items-center">
+        
+        {/* أزرار الفريمات الزمنية */}
+        <div className="flex items-center bg-[#111726] p-1.5 rounded-xl border border-gray-800 gap-1">
+          {[
+            { id: '5m', label: '5 دقائق' },
+            { id: '15m', label: '15 دقيقة' },
+            { id: '1h', label: '1 ساعة' },
+            { id: '24h', label: '24 ساعة' }
+          ].map(tf => (
+            <button
+              key={tf.id}
+              onClick={() => setActiveTimeframe(tf.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                activeTimeframe === tf.id
+                  ? 'bg-amber-500 text-gray-950 shadow-md shadow-amber-500/20'
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-[#182032]'
+              }`}
+            >
+              {tf.label}
+            </button>
+          ))}
+        </div>
+
+        {/* أزرار الفلترة حسب القطاع */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+          {[
+            { id: 'all', label: 'كل العملات', icon: Layers },
+            { id: 'leader', label: 'القيادية', icon: Coins },
+            { id: 'ai', label: 'الذكاء الاصطناعي', icon: Cpu },
+            { id: 'l2', label: 'الطبقة الثانية', icon: Activity },
+            { id: 'meme', label: 'الميم', icon: Zap }
+          ].map(cat => {
+            const Icon = cat.icon;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border whitespace-nowrap transition-all ${
+                  activeCategory === cat.id
+                    ? 'bg-[#182032] border-amber-500/50 text-amber-400'
+                    : 'bg-[#111726] border-gray-800 text-gray-400 hover:bg-[#182032]'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* مربع البحث */}
+        <div className="relative">
+          <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          <input
+            type="text"
+            placeholder="ابحث عن عملة (BTC, ETH...)"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full md:w-56 bg-[#111726] border border-gray-800 rounded-xl pr-9 pl-4 py-1.5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-amber-500/50 transition-all"
+          />
+        </div>
+      </div>
+
+      {/* 3. المحتوى الرئيسي: جدول رادار السيولة + شارت المعاينة */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* جدول تتبع السيولة المباشر (2/3 المساحة) */}
+        <div className="lg:col-span-2 bg-[#111726] rounded-2xl border border-gray-800 overflow-hidden shadow-xl">
+          <div className="p-4 border-b border-gray-800 flex justify-between items-center">
+            <h2 className="text-sm font-bold text-gray-200 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-amber-400" />
+              جدول البث المباشر لتدفق أوردرات الحيتان (Order Flow)
+            </h2>
+            <span className="text-xs text-gray-500">{filteredCoins.length} عملة نشطة</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-right border-collapse">
+              <thead>
+                <tr className="border-b border-gray-800 text-gray-400 text-xs bg-[#141b2d]">
+                  <th className="p-3.5">العملة والتصنيف</th>
+                  <th className="p-3.5">السعر الحالي</th>
+                  <th className="p-3.5">صافي التدفق ($)</th>
+                  <th className="p-3.5 w-44">ضغط الشراء / البيع</th>
+                  <th className="p-3.5">حجم التداول</th>
+                  <th className="p-3.5">الإشارة المؤسسية</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800/40 text-xs">
+                {filteredCoins.map((coin) => (
+                  <tr 
+                    key={coin.id}
+                    onClick={() => setSelectedCoin(coin)}
+                    className={`cursor-pointer transition-colors hover:bg-[#182032]/80 ${
+                      selectedCoin.id === coin.id ? 'bg-[#182032] border-r-4 border-amber-500' : ''
+                    }`}
+                  >
+                    <td className="p-3.5">
+                      <div className="font-bold text-white text-sm flex items-center gap-1.5">
+                        {coin.symbol}
+                      </div>
+                      <div className="text-[10px] text-gray-400">{coin.name}</div>
+                    </td>
+
+                    <td className="p-3.5 font-mono">
+                      <div className="font-semibold text-gray-200">${coin.price.toLocaleString()}</div>
+                      <div className={`text-[10px] flex items-center gap-0.5 ${coin.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {coin.change >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                        {coin.change}%
+                      </div>
+                    </td>
+
+                    <td className="p-3.5 font-mono font-bold">
+                      <span className={coin.netFlow >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                        {coin.netFlow >= 0 
+                          ? `+$${(coin.netFlow / 1e6).toFixed(2)}M` 
+                          : `-$${(Math.abs(coin.netFlow) / 1e6).toFixed(2)}M`}
+                      </span>
+                    </td>
+
+                    <td className="p-3.5">
+                      <div className="flex justify-between text-[10px] font-mono mb-1">
+                        <span className="text-emerald-400 font-semibold">شراء {coin.buyRatio}%</span>
+                        <span className="text-rose-400 font-semibold">بيع {coin.sellRatio}%</span>
+                      </div>
+                      <div className="w-full bg-rose-500/20 h-1.5 rounded-full overflow-hidden flex">
+                        <div className="bg-emerald-500 h-full transition-all duration-500" style={{ width: `${coin.buyRatio}%` }}></div>
+                        <div className="bg-rose-500 h-full transition-all duration-500" style={{ width: `${coin.sellRatio}%` }}></div>
+                      </div>
+                    </td>
+
+                    <td className="p-3.5 font-mono text-gray-400">{coin.volume}</td>
+
+                    <td className="p-3.5">
+                      <span className={`text-[11px] px-2.5 py-1 rounded-lg font-medium inline-block border ${
+                        coin.status === 'inflow'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                          : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                      }`}>
+                        {coin.signal}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* لوحة تفاصيل العملة والشارت الحي (1/3 المساحة) */}
+        <div className="bg-[#111726] rounded-2xl border border-gray-800 p-5 flex flex-col justify-between shadow-xl">
+          <div>
+            <div className="flex justify-between items-start mb-4 pb-4 border-b border-gray-800">
+              <div>
+                <span className="text-xs text-gray-400">العملة المحددة</span>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2 mt-0.5">
+                  {selectedCoin.symbol}
+                  <span className="text-xs font-normal text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded">
+                    {selectedCoin.name}
+                  </span>
+                </h3>
+              </div>
+              <div className="text-left font-mono">
+                <div className="text-lg font-bold text-white">${selectedCoin.price}</div>
+                <span className={`text-xs ${selectedCoin.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {selectedCoin.change >= 0 ? '+' : ''}{selectedCoin.change}%
+                </span>
+              </div>
+            </div>
+
+            {/* تفاصيل القوة الشرائية */}
+            <div className="space-y-3 mb-6">
+              <div className="bg-[#182032] p-3 rounded-xl border border-gray-800">
+                <div className="flex justify-between text-xs text-gray-400 mb-1">
+                  <span>ميزان القوى للسيولة (Volume Delta)</span>
+                  <span className={selectedCoin.netFlow >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                    {selectedCoin.buyRatio > selectedCoin.sellRatio ? 'سيطرة للمشترين' : 'سيطرة للبائعين'}
+                  </span>
+                </div>
+                <div className="w-full bg-rose-500/30 h-2.5 rounded-full overflow-hidden flex mt-2">
+                  <div className="bg-emerald-500 h-full transition-all duration-500" style={{ width: `${selectedCoin.buyRatio}%` }}></div>
+                  <div className="bg-rose-500 h-full transition-all duration-500" style={{ width: `${selectedCoin.sellRatio}%` }}></div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                <div className="bg-[#182032] p-2.5 rounded-xl border border-gray-800">
+                  <span className="text-gray-400 block text-[10px] mb-1">صافي التدفق</span>
+                  <span className={`font-bold ${selectedCoin.netFlow >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    ${(selectedCoin.netFlow / 1e6).toFixed(2)}M
+                  </span>
+                </div>
+                <div className="bg-[#182032] p-2.5 rounded-xl border border-gray-800">
+                  <span className="text-gray-400 block text-[10px] mb-1">إجمالي الحجم</span>
+                  <span className="font-bold text-gray-200">{selectedCoin.volume}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* تمثيل للشارت التفاعلي للسيولة */}
+            <div className="bg-[#182032] p-4 rounded-xl border border-gray-800">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-xs font-semibold text-gray-300 flex items-center gap-1">
+                  <ChartIcon className="w-3.5 h-3.5 text-amber-400" />
+                  مسار تدفق السيولة المؤسسية
+                </span>
+                <span className="text-[10px] text-gray-500">فريم {activeTimeframe}</span>
+              </div>
+              
+              {/* رسم بياني صوري مبسط بتدرج لون السيولة */}
+              <div className="h-32 flex items-end gap-1.5 pt-4 px-1 border-b border-gray-700/50">
+                {[40, 65, 30, 85, 55, 90, 75, 60, 95, 80].map((height, i) => (
+                  <div 
+                    key={i} 
+                    className="flex-1 bg-gradient-to-t from-emerald-500/20 to-emerald-500 rounded-t transition-all hover:brightness-125"
+                    style={{ height: `${height}%` }}
+                  ></div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-gray-800 flex items-center justify-between text-xs text-gray-400">
+            <span>حالة الرادار: نشط</span>
+            <span className="text-emerald-400 font-mono flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              متصل بـ Binance Websocket
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
